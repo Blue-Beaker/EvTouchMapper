@@ -1,13 +1,14 @@
-from typing import override
-import evdev,os,asyncio,colorama,configparser
+import evdev
 from evdev import ecodes
-from evdev import UInput, InputDevice,categorize
+from evdev import UInput, InputDevice
 from evdev.events import InputEvent
 from touch_tracker import TouchTracker
+import touchmapper_config
+import geometryHelper
 # sudo usermod -a -G input $USER before using this
 
 if __name__ == "__main__":
-    
+    touchmapper_config.update_config()
     devices = [InputDevice(path) for path in evdev.list_devices()]
     tp_devices:list[InputDevice]=[]
     for device in devices:
@@ -34,15 +35,27 @@ if __name__ == "__main__":
 
     print(device.name)
 
+    x=device.absinfo(0)
+    y=device.absinfo(1)
+    geometryTouch=geometryHelper.Geometry(x.min,x.max,y.min,y.max)
+
+    geometryScreen=geometryHelper.Geometry(0,1920,0,1080)
+
     virtual_input = UInput.from_device(device, name='passthrough')
 
     device.grab()
 
     tracker=TouchTracker()
-
+    # tracker.print_info=True
     for event in device.read_loop():
         event:InputEvent
         events=tracker.handleEvent(event)
         if events:
             for event in events:
                 virtual_input.write_event(event)
+            captured=tracker.getCapturedTouches()
+
+            touchList={}
+            for slot,touch in captured.items():
+                touchList[str(slot)]=str(geometryHelper.TouchRelative.fromAbsolute(touch,geometryTouch).toAbsolute(geometryScreen))
+            print(touchList)

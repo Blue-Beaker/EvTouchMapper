@@ -1,39 +1,40 @@
 from typing import override
-import evdev,os,asyncio,colorama,configparser
+import evdev,os,asyncio,colorama
 from evdev import ecodes
 from evdev import UInput, InputDevice,categorize
 from evdev.events import InputEvent
+import touchmapper_config
+from touchinstance import TouchInstance
 ACTION_PRESS=1
 ACTION_RELEASE=0
-
-class TouchInstance:
-    id:int=-1
-    x:int=-1
-    y:int=-1
-    pressed:bool=True
-    def __init__(self,id):
-        self.id=id
-    @override
-    def __str__(self):
-        if self.pressed:
-            return f"Pressed {self.id}@({self.x},{self.y})"
-        else:
-            return f"Release {self.id}"
-            return f"Release {self.id}@({self.x},{self.y})"
     
 class TouchTracker:
-    lastSlot:int=-1
-    trackID:int=-1
-    capturedSlots:set[int]=set()
-    touchInstances:dict[int,TouchInstance]={}
-    unsentActions:list[tuple[int,int]]=[]
-    unsentEvents:list[tuple[int,InputEvent]]=[]
+
+    # print_info:bool
+
+    # lastSlot:int
+    # trackID:int
+    # capturedSlots:set[int]
+    # touchInstances:dict[int,TouchInstance]
+    # unsentActions:list[tuple[int,int]]
+    # unsentEvents:list[tuple[int,InputEvent]]
+    def __init__(self):
+
+        self.print_info=False
+
+        self.lastSlot:int=-1
+        self.trackID:int=-1
+        self.capturedSlots:set[int]=set()
+        self.touchInstances:dict[int,TouchInstance]={}
+        self.unsentActions:list[tuple[int,int]]=[]
+        self.unsentEvents:list[tuple[int,InputEvent]]=[]
+        self.capturedTouches:dict[int,TouchInstance]={}
     def saveTouches(self,event:InputEvent):
         if event.type==3:
             if event.code==ecodes.ABS_MT_SLOT:
                 if event.value!=-1:
                     if event.value not in self.touchInstances:
-                        self.touchInstances[event.value]=TouchInstance(-1)
+                        self.touchInstances[event.value]=TouchInstance(id=-1)
                     self.lastSlot=event.value
 
             elif event.code==ecodes.ABS_MT_TRACKING_ID:
@@ -79,7 +80,7 @@ class TouchTracker:
         if id==None:
             id=self.trackID
         if slot not in self.touchInstances:
-            self.touchInstances[slot]=TouchInstance(id)
+            self.touchInstances[slot]=TouchInstance(id=id)
         self.touchInstances[slot].pressed=True
         self.touchInstances[slot].id=id
 
@@ -95,7 +96,7 @@ class TouchTracker:
         if self.shouldStartCapture(self.touchInstances[slot]):
             self.capturedSlots.add(slot)
     def shouldStartCapture(self,touch:TouchInstance):
-        if touch.x>8192:
+        if touch.x>0:
             return True
         return False
     def isSlotCaptured(self,slot:int):
@@ -106,7 +107,7 @@ class TouchTracker:
         for i,event in self.unsentEvents:
             self.printEvents(i,event)
             if self.isSlotCaptured(i):
-                self.handleTouch(self.touchInstances[i])
+                self.handleTouch(self.touchInstances[i],i)
             else:
                 passThroughEvents.append(event)
         return passThroughEvents
@@ -114,16 +115,23 @@ class TouchTracker:
     #     if self.lastSlot in self.touchInstances:
     #         return self.touchInstances[self.lastSlot]
         
-    def handleTouch(self,touch:TouchInstance):
-        print(f"Captured:{touch}")
-    
+    def handleTouch(self,touch:TouchInstance,slot:int):
+        self.capturedTouches[slot]=touch
+        if self.print_info:
+            print("Captured:",str(touch))
+
+    def getCapturedTouches(self):
+        captured=self.capturedTouches.copy()
+        self.capturedTouches.clear()
+        return captured
+
     def putValue(self,slot:int,id:int=None,x:int=None,y:int=None,pressed:int=None):
         if not slot in self.touchInstances:
-            self.touchInstances[slot]=TouchInstance(id)
+            self.touchInstances[slot]=TouchInstance(id=id)
     
     def printEvents(self,slot:int,event:InputEvent):
             # printEvent=event.code not in [ecodes.ABS_MT_POSITION_X,ecodes.ABS_MT_POSITION_Y,ecodes.ABS_X,ecodes.ABS_Y]
-        printEvent=True
+        printEvent=self.print_info
         if printEvent:
             ev=categorize(event)
 
