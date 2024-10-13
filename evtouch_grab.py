@@ -2,9 +2,11 @@ import evdev
 from evdev import ecodes
 from evdev import UInput, InputDevice
 from evdev.events import InputEvent
+import pynput
 from touch_tracker import TouchTracker
 import touchmapper_config
 import geometryHelper
+import mapper
 # sudo usermod -a -G input $USER before using this
 
 if __name__ == "__main__":
@@ -37,9 +39,9 @@ if __name__ == "__main__":
 
     x=device.absinfo(0)
     y=device.absinfo(1)
-    geometryTouch=geometryHelper.Geometry(x.min,x.max,y.min,y.max)
 
-    geometryScreen=geometryHelper.Geometry(0,1920,0,1080)
+    mapper.geometryTouch=geometryHelper.Geometry(x.min,x.max,y.min,y.max)
+    mapper.geometryScreen=geometryHelper.Geometry(0,1920,0,1080)
 
     virtual_input = UInput.from_device(device, name='passthrough')
 
@@ -54,8 +56,4 @@ if __name__ == "__main__":
             for event in events:
                 virtual_input.write_event(event)
             captured=tracker.getCapturedTouches()
-
-            touchList={}
-            for slot,touch in captured.items():
-                touchList[str(slot)]=str(geometryHelper.TouchRelative.fromAbsolute(touch,geometryTouch).toAbsolute(geometryScreen))
-            print(touchList)
+            mapper.processTouches(captured)

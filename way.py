@@ -14,5 +14,3 @@ def listen(event):
     print(event)
 
 listener=pywayland.server.Listener(listen)
-while 1:
-    pass
