@@ -1,6 +1,6 @@
 # EvTouchMapper
 
-A touch remapper based on evdev, written with python. 
+A touchscreen remapper for linux, based on evdev, written with python. 
 Run evtouch_grab.py in a terminal to start. 
 
 Works both under Wayland or X11 for now. 
