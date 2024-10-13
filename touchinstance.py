@@ -18,3 +18,6 @@ class TouchInstance:
         else:
             return f"Release {self.id}"
             return f"Release {self.id}@({self.x},{self.y})"
+    @override
+    def __repr__(self):
+        return f"TouchInstance id={self.id} x={self.x} y={self.y} pressed={self.pressed}"

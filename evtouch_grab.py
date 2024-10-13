@@ -36,14 +36,13 @@ if __name__ == "__main__":
         exit()
 
     print(device.name)
-
+    # print(device.capabilities(verbose=True))
     x=device.absinfo(0)
     y=device.absinfo(1)
 
     mapper.geometryTouch=geometryHelper.Geometry(x.min,x.max,y.min,y.max)
-    mapper.geometryScreen=geometryHelper.Geometry(0,1920,0,1080)
 
-    virtual_input = UInput.from_device(device, name='passthrough')
+    touch_passthrough = UInput.from_device(device, name=device.name+'passthrough')
 
     device.grab()
 
@@ -54,6 +53,6 @@ if __name__ == "__main__":
         events=tracker.handleEvent(event)
         if events:
             for event in events:
-                virtual_input.write_event(event)
+                touch_passthrough.write_event(event)
             captured=tracker.getCapturedTouches()
             mapper.processTouches(captured)
