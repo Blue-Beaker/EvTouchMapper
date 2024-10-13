@@ -3,6 +3,8 @@ from evdev import ecodes
 from evdev import UInput, InputDevice
 from evdev.events import InputEvent
 import pynput
+import mapperWidgets
+import test_widgets
 from touch_tracker import TouchTracker
 from touchmapper_config import CONFIG
 import geometryHelper
@@ -48,7 +50,10 @@ if __name__ == "__main__":
     
     mapper=Mapper()
     
+    mapper.widgetManager=test_widgets.TestWidgets()
+    
     tracker=TouchTracker()
+    
     # tracker.print_info=True
     for event in device.read_loop():
         event:InputEvent
