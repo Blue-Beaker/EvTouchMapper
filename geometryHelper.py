@@ -12,7 +12,7 @@ class Geometry():
 
 class TouchRelative:
 
-    def __init__(self,x:float,y:float,id:float=None,pressed:bool=True):
+    def __init__(self,x:float,y:float,id:int|None=None,pressed:bool=True):
         self.x=x
         self.y=y
         self.id=id
@@ -32,11 +32,11 @@ class TouchRelative:
         return newTouch
     
     def flip(self,flipX:bool=False,flipY:bool=False,swapXY:bool=False):
-        if flipX:
+        if flipX==True:
             self.x=1-self.x
-        if flipY:
-            self.x=1-self.y
-        if swapXY:
+        if flipY==True:
+            self.y=1-self.y
+        if swapXY==True:
             c=self.x
             self.x=self.y
             self.y=c

@@ -76,7 +76,7 @@ class TouchTracker:
             return passthroughEvents
         return None
     
-    def startPressSlot(self,slot:int,id:int=None):
+    def startPressSlot(self,slot:int,id:int|None=None):
         if id==None:
             id=self.trackID
         if slot not in self.touchInstances:
@@ -124,10 +124,6 @@ class TouchTracker:
         captured=self.capturedTouches.copy()
         self.capturedTouches.clear()
         return captured
-
-    def putValue(self,slot:int,id:int=None,x:int=None,y:int=None,pressed:int=None):
-        if not slot in self.touchInstances:
-            self.touchInstances[slot]=TouchInstance(id=id)
     
     def printEvents(self,slot:int,event:InputEvent):
             # printEvent=event.code not in [ecodes.ABS_MT_POSITION_X,ecodes.ABS_MT_POSITION_Y,ecodes.ABS_X,ecodes.ABS_Y]

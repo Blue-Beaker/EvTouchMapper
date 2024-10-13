@@ -4,13 +4,13 @@ from evdev import UInput, InputDevice
 from evdev.events import InputEvent
 import pynput
 from touch_tracker import TouchTracker
-import touchmapper_config
+from touchmapper_config import CONFIG
 import geometryHelper
 import mapper
 # sudo usermod -a -G input $USER before using this
 
 if __name__ == "__main__":
-    touchmapper_config.update_config()
+    CONFIG.update_config()
     devices = [InputDevice(path) for path in evdev.list_devices()]
     tp_devices:list[InputDevice]=[]
     for device in devices:

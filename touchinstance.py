@@ -2,11 +2,11 @@
 from typing import override
 
 class TouchInstance:
-    id:int
+    id:int|None
     x:int
     y:int
     pressed:bool
-    def __init__(self,x:int=-1,y:int=-1,id:int=-1,pressed:bool=True):
+    def __init__(self,x:int=-1,y:int=-1,id:int|None=-1,pressed:bool=True):
         self.id=id
         self.x=x
         self.y=y

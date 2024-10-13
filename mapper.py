@@ -6,6 +6,8 @@ from touchinstance import TouchInstance
 import evdev
 from evdev import ecodes as ec
 
+from touchmapper_config import CONFIG
+
 geometryTouch:geometryHelper.Geometry
 geometryOutput:geometryHelper.Geometry=geometryHelper.Geometry(0,16384,0,16384)
 
@@ -20,15 +22,11 @@ capabs=cap = {
 ui_mouse = evdev.UInput(cap,name='mapper-mouse')
 
 def processTouches(captured:dict[int, TouchInstance]):
-    print(captured)
-    # touchList:dict[int, TouchInstance]={}
-    # for slot,touch in captured.items():
-    #     touchList[str(slot)]=str()
-    # print(touchList)
+    # print(captured)
     if captured.__len__()==1:
         for slot,touch in captured.items():
-            touch2=geometryHelper.TouchRelative.fromAbsolute(touch,geometryTouch).toAbsolute(geometryOutput)
-            print(touch2)
+            touch2=geometryHelper.TouchRelative.fromAbsolute(touch,geometryTouch).flip(CONFIG.flip_x,CONFIG.flip_y,CONFIG.swap_xy).toAbsolute(geometryOutput)
+            # print(touch2)
             ui_mouse.write(ec.EV_ABS, ec.ABS_X, touch2.x)
             ui_mouse.write(ec.EV_ABS, ec.ABS_Y, touch2.y)
             if touch2.pressed:

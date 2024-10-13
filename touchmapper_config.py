@@ -1,33 +1,36 @@
 from configparser import ConfigParser
 import os,sys
 
+
 CONFIG_PATH=os.path.join(os.path.dirname(sys.argv[0]),"touchmapper.cfg")
 SECTION='Touchscreen'
+class __CFG:
+    def __init__(self) -> None:
+        self.parser=ConfigParser(default_section=SECTION,defaults={"flip_x":0,"flip_y":0,"swap_xy":0})
+    @property
+    def flip_x(self):
+        return int(self.parser[SECTION]['flip_x'])
+    @flip_x.setter
+    def setFlip_x(self,value:int):
+        self.parser[SECTION]['flip_x']=str(value)
 
-PARSER:ConfigParser=ConfigParser(default_section="Touchscreen",defaults={"flip_x":False,"flip_y":False,"swap_xy":False})
+    @property
+    def flip_y(self):
+        return int(self.parser[SECTION]['flip_y'])
+    @flip_y.setter
+    def setFlip_y(self,value:int):
+        self.parser[SECTION]['flip_y']=str(value)
 
-def update_config():
-    PARSER.read(CONFIG_PATH)
-    with open(CONFIG_PATH,"w") as f:
-        PARSER.write(f)
+    @property
+    def swap_xy(self):
+        return int(self.parser[SECTION]['swap_xy'])
+    @swap_xy.setter
+    def setSwap_xy(self,value:int):
+        self.parser[SECTION]['swap_xy']=str(value)
+        
+    def update_config(self):
+        self.parser.read(CONFIG_PATH)
+        with open(CONFIG_PATH,"w") as f:
+            self.parser.write(f)
 
-@property
-def flip_x():
-    return PARSER['SECTION']['flip_x']
-@property
-def flip_x(value:bool):
-    PARSER['SECTION']['flip_x']=value
-
-@property
-def flip_y():
-    return PARSER['SECTION']['flip_y']
-@property
-def flip_y(value:bool):
-    PARSER['SECTION']['flip_y']=value
-
-@property
-def swap_xy():
-    return PARSER['SECTION']['swap_xy']
-@property
-def swap_xy(value:bool):
-    PARSER['SECTION']['swap_xy']=value
+CONFIG:__CFG=__CFG()
