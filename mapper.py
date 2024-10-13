@@ -1,37 +1,70 @@
 import math
 import time
 import evdev.uinput
-import geometryHelper
+from geometryHelper import TouchInstance,TouchRelative,Geometry
+import mapperWidgets
 from touchinstance import TouchInstance
 import evdev
 from evdev import ecodes as ec
 
 from touchmapper_config import CONFIG
+from mapperOutput import Mouse
 
-geometryTouch:geometryHelper.Geometry
-geometryOutput:geometryHelper.Geometry=geometryHelper.Geometry(0,16384,0,16384)
 
-capabs=cap = {
-    ec.EV_KEY : [ec.BTN_LEFT, ec.BTN_RIGHT, ec.BTN_MIDDLE, ec.BTN_FORWARD, ec.BTN_BACK],
-    ec.EV_ABS : [
-        (ec.ABS_X, evdev.AbsInfo(value=0, min=0, max=16384,
-                          fuzz=0, flat=0, resolution=0)),
-        (ec.ABS_Y, evdev.AbsInfo(0, 0, 16384, 0, 0, 0))]
-}
 
-ui_mouse = evdev.UInput(cap,name='mapper-mouse')
-
-def processTouches(captured:dict[int, TouchInstance]):
-    # print(captured)
-    if captured.__len__()==1:
-        for slot,touch in captured.items():
-            touch2=geometryHelper.TouchRelative.fromAbsolute(touch,geometryTouch).flip(CONFIG.flip_x,CONFIG.flip_y,CONFIG.swap_xy).toAbsolute(geometryOutput)
-            # print(touch2)
-            ui_mouse.write(ec.EV_ABS, ec.ABS_X, touch2.x)
-            ui_mouse.write(ec.EV_ABS, ec.ABS_Y, touch2.y)
-            if touch2.pressed:
-                ui_mouse.write(ec.EV_KEY,ec.BTN_LEFT,1)
-            ui_mouse.syn()
-    else:
-        ui_mouse.write(ec.EV_KEY,ec.BTN_LEFT,0)
-        ui_mouse.syn()
+# ui_mouse = evdev.UInput(capabs,name='mapper-mouse')
+class Mapper:
+    geometryTouch:Geometry
+    geometryOutput:Geometry=Geometry(0,16384,0,16384)
+    widgetManager:mapperWidgets.WidgetManager|None=None
+    touches:dict[int, TouchRelative]={}
+    
+    def __init__(self):
+        self.mouse = Mouse()
+        self.touches:dict[int, TouchRelative]={}
+        
+    def updateTouches(self,touches:dict[int, TouchInstance]):
+        for slot,touch in touches.items():
+            self.touches[slot]=TouchRelative.fromAbsolute(touch,self.geometryTouch).flip(CONFIG.flip_x,CONFIG.flip_y,CONFIG.swap_xy)
+        self.processTouchesFrame()
+        print(self.touches)
+        
+    def processTouchesFrame(self):
+        sendTouches:dict[int,TouchRelative]={}
+        for slot,touchRel in self.touches.items():
+            if not self.processWidgets(touchRel):
+                sendTouches[slot]=(touchRel)
+        self.processGesture(sendTouches)
+        
+    def processWidgets(self,touch:TouchRelative):
+        if self.widgetManager and isinstance(self.widgetManager,mapperWidgets.WidgetManager):
+            widgets:list[mapperWidgets.Widget]=self.widgetManager.getWidgets()
+            for widget in widgets:
+                if widget.isInWidget(touch):
+                    return True
+    
+    def processGesture(self,touches:dict[int,TouchRelative]):
+        activeTouches:dict[int,TouchRelative]={}
+        for slot,touch in touches.items():
+            if touch.pressed:
+                activeTouches[slot]=touch
+                
+        if activeTouches.__len__()==1:
+            for slot,touch in activeTouches.items():
+                # print(touch2)
+                self.mouse.moveFractional(touch)
+                if touch.pressed:
+                    self.mouse.setPressed(1)
+                self.mouse.syn()
+        else:
+            self.mouse.setPressed(0)
+            self.mouse.syn()
+        if activeTouches.__len__()>=2:
+            sums=[0.0,0.0,0]
+            for slot,touch in activeTouches.items():
+                sums[0]=sums[0]+touch.x
+                sums[1]=sums[1]+touch.y
+                sums[2]=sums[2]+1
+            avgX=sums[0]/sums[2]
+            avgY=sums[1]/sums[2]
+            print(avgX,avgY)

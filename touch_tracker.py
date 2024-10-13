@@ -25,6 +25,7 @@ class TouchTracker:
         self.lastSlot:int=-1
         self.trackID:int=-1
         self.capturedSlots:set[int]=set()
+        self.slotsToStopCapture:set[int]=set()
         self.touchInstances:dict[int,TouchInstance]={}
         self.unsentActions:list[tuple[int,int]]=[]
         self.unsentEvents:list[tuple[int,InputEvent]]=[]
@@ -85,20 +86,23 @@ class TouchTracker:
         self.touchInstances[slot].id=id
 
         self.unsentActions.append((ACTION_PRESS,slot))
+        
     def stopPressSlot(self,slot:int):
         if slot in self.touchInstances:
             self.touchInstances[slot].pressed=False
         if slot in self.capturedSlots:
-            self.capturedSlots.remove(slot)
+            self.slotsToStopCapture.add(slot)
         self.unsentActions.append((ACTION_RELEASE,slot))
 
     def checkStartCapture(self,slot:int):
         if self.shouldStartCapture(self.touchInstances[slot]):
             self.capturedSlots.add(slot)
+            
     def shouldStartCapture(self,touch:TouchInstance):
         if touch.x>0:
             return True
         return False
+    
     def isSlotCaptured(self,slot:int):
         return slot in self.capturedSlots
     
@@ -108,6 +112,9 @@ class TouchTracker:
             self.printEvents(i,event)
             if self.isSlotCaptured(i):
                 self.handleTouch(self.touchInstances[i],i)
+                if i in self.slotsToStopCapture:
+                    self.capturedSlots.remove(i)
+                    self.slotsToStopCapture.remove(i)
             else:
                 passThroughEvents.append(event)
         return passThroughEvents

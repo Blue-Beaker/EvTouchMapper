@@ -6,7 +6,7 @@ import pynput
 from touch_tracker import TouchTracker
 from touchmapper_config import CONFIG
 import geometryHelper
-import mapper
+from mapper import Mapper
 # sudo usermod -a -G input $USER before using this
 
 if __name__ == "__main__":
@@ -40,12 +40,14 @@ if __name__ == "__main__":
     x=device.absinfo(0)
     y=device.absinfo(1)
 
-    mapper.geometryTouch=geometryHelper.Geometry(x.min,x.max,y.min,y.max)
+    Mapper.geometryTouch=geometryHelper.Geometry(x.min,x.max,y.min,y.max)
 
     touch_passthrough = UInput.from_device(device, name=device.name+'passthrough')
 
     device.grab()
-
+    
+    mapper=Mapper()
+    
     tracker=TouchTracker()
     # tracker.print_info=True
     for event in device.read_loop():
@@ -55,4 +57,4 @@ if __name__ == "__main__":
             for event in events:
                 touch_passthrough.write_event(event)
             captured=tracker.getCapturedTouches()
-            mapper.processTouches(captured)
+            mapper.updateTouches(captured)
