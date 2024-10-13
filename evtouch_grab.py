@@ -24,16 +24,18 @@ class TouchInstance:
     @override
     def __str__(self):
         if self.pressed:
-            return f"Touch {self.id} at ({self.x},{self.y})"
+            return f"Pressed {self.id}@({self.x},{self.y})"
         else:
-            return ""
+            return f"Release {self.id}"
+            return f"Release {self.id}@({self.x},{self.y})"
     
 class TouchTracker:
     lastSlot:int=-1
     trackID:int=-1
-    capturedIDs:set[int]=set()
+    capturedSlots:set[int]=set()
     touchInstances:dict[int,TouchInstance]={}
-    unsendActions:list[tuple[str,int]]=[]
+    unsentActions:list[tuple[int,int]]=[]
+    unsentEvents:list[tuple[int,InputEvent]]=[]
     def saveTouches(self,event:InputEvent):
         if event.type==3:
             if event.code==ecodes.ABS_MT_SLOT:
@@ -46,8 +48,8 @@ class TouchTracker:
                 if event.value==-1:
                     self.stopPressSlot(self.lastSlot)
                 else:
-                    self.startPressSlot(self.lastSlot)
-                self.trackID=event.value
+                    self.startPressSlot(self.lastSlot,event.value)
+                    self.trackID=event.value
 
             elif (event.code==ecodes.ABS_X) or (event.code==ecodes.ABS_MT_POSITION_X):
                 if self.lastSlot!=-1:
@@ -65,72 +67,85 @@ class TouchTracker:
             if event.value==0:
                 self.stopPressSlot(self.lastSlot)
         if event.type==0:
-            for action,slot in self.unsendActions:
+            for action,slot in self.unsentActions:
                 if action==ACTION_PRESS:
                     self.checkStartCapture(slot)
-            self.unsendActions.clear()
+            self.unsentActions.clear()
+            self.unsentEvents.append((-1,event))
+        else:
+            self.unsentEvents.append((self.lastSlot,event))
 
     def handleEvent(self,event:InputEvent):
-        ev=categorize(event)
         self.saveTouches(event)
-        liststr=""
-        for id,instance in self.touchInstances.items():
-            liststr=liststr+","+instance.__str__()
-        
-        capture=False
-        if event.type!=0:
-            if self.handleLastTouch():
-                capture=True
-            
-        # printEvent=event.code not in [ecodes.ABS_MT_POSITION_X,ecodes.ABS_MT_POSITION_Y,ecodes.ABS_X,ecodes.ABS_Y]
-        printEvent=True
-        if printEvent:
-            print(f'\033[{37-self.lastSlot}m',end="")
-            if capture:
-                print(colorama.Back.RED,end="")
-            else:
-                print(colorama.Back.BLACK,end="")
-            print(ev,f"Type={event.type}",f"Code={event.code}",f"Value={event.value}")
-            print(liststr,"captured="+str(self.capturedIDs))
-        return capture
+        if event.type==0:
+            passthroughEvents=self.sendEvents()
+            self.unsentEvents.clear()
+            return passthroughEvents
+        return None
     
-    def startPressSlot(self,slot:int,id:int=-1):
+    def startPressSlot(self,slot:int,id:int=None):
+        if id==None:
+            id=self.trackID
         if slot not in self.touchInstances:
             self.touchInstances[slot]=TouchInstance(id)
         self.touchInstances[slot].pressed=True
-        self.unsendActions.append((ACTION_PRESS,slot))
+        self.touchInstances[slot].id=id
+
+        self.unsentActions.append((ACTION_PRESS,slot))
     def stopPressSlot(self,slot:int):
         if slot in self.touchInstances:
             self.touchInstances[slot].pressed=False
-        if slot in self.capturedIDs:
-            self.capturedIDs.remove(slot)
-        self.unsendActions.append((ACTION_RELEASE,slot))
+        if slot in self.capturedSlots:
+            self.capturedSlots.remove(slot)
+        self.unsentActions.append((ACTION_RELEASE,slot))
 
-    def checkStartCapture(self,slot):
+    def checkStartCapture(self,slot:int):
         if self.shouldStartCapture(self.touchInstances[slot]):
-            self.capturedIDs.add(slot)
+            self.capturedSlots.add(slot)
     def shouldStartCapture(self,touch:TouchInstance):
         if touch.x>8192:
             return True
         return False
+    def isSlotCaptured(self,slot:int):
+        return slot in self.capturedSlots
     
-    def getLastTouch(self):
-        if self.lastSlot in self.touchInstances:
-            return self.touchInstances[self.lastSlot]
-    def handleLastTouch(self):
-        lastTouch=self.getLastTouch()
-        if lastTouch:
-            return self.handleTouch(lastTouch)
-        return False        
+    def sendEvents(self):
+        passThroughEvents:list[InputEvent]=[]
+        for i,event in self.unsentEvents:
+            self.printEvents(i,event)
+            if self.isSlotCaptured(i):
+                self.handleTouch(self.touchInstances[i])
+            else:
+                passThroughEvents.append(event)
+        return passThroughEvents
+    # def getLastTouch(self):
+    #     if self.lastSlot in self.touchInstances:
+    #         return self.touchInstances[self.lastSlot]
+        
     def handleTouch(self,touch:TouchInstance):
-        if self.lastSlot in self.capturedIDs:
-            return True
-        return False
+        print(f"Captured:{touch}")
     
     def putValue(self,slot:int,id:int=None,x:int=None,y:int=None,pressed:int=None):
         if not slot in self.touchInstances:
             self.touchInstances[slot]=TouchInstance(id)
+    
+    def printEvents(self,slot:int,event:InputEvent):
+            # printEvent=event.code not in [ecodes.ABS_MT_POSITION_X,ecodes.ABS_MT_POSITION_Y,ecodes.ABS_X,ecodes.ABS_Y]
+        printEvent=True
+        if printEvent:
+            ev=categorize(event)
 
+            touchList=[]
+            for id,instance in self.touchInstances.items():
+                touchList.append(instance.__str__())
+            
+            print(f'\033[{37-slot}m',end="")
+            if self.isSlotCaptured(slot):
+                print(colorama.Back.RED,end="")
+            else:
+                print(colorama.Back.BLACK,end="")
+            print(ev,f"Type={event.type}",f"Code={event.code}",f"Value={event.value}")
+            print(",".join(touchList),"captured="+str(self.capturedSlots))
 
 if __name__ == "__main__":
     
@@ -168,7 +183,7 @@ if __name__ == "__main__":
 
     for event in device.read_loop():
         event:InputEvent
-        if not tracker.handleEvent(event):
-            virtual_input.write_event(event)
-        else:
-            print(tracker.getLastTouch())
+        events=tracker.handleEvent(event)
+        if events:
+            for event in events:
+                virtual_input.write_event(event)
