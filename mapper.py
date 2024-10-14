@@ -13,35 +13,57 @@ from mapperOutput import Mouse
 
 
 class Gesture:
-    
     def __init__(self) -> None:
-        pass
+        self.clear()
+    def clear(self):
+        self.startTime=time.time_ns()
+        self.initX:float|None=None
+        self.initY:float|None=None
+        self.lastX:float|None=None
+        self.lastY:float|None=None
+        self.clicks:int=0
     # Do gestures, after the touch isn't captured by any widget
     def processGesture(self,touches:dict[int,TouchRelative],mouse:Mouse):
         activeTouches:dict[int,TouchRelative]={}
         for slot,touch in touches.items():
             if touch.pressed:
                 activeTouches[slot]=touch
-                
+        # time2=time.time_ns()
+        # if time2-self.startTime<100000:
+        #     self.clicks=max(self.clicks,activeTouches.__len__())
+        #     return
+        # if activeTouches.__len__()<1:
+        #     self.doSingleTouchGesture(activeTouches,mouse)
+        #     mouse.syn()
+        #     time.sleep(0.01)
+        #     mouse.setPressed(0)
+        #     mouse.syn()
+        #     self.clicks=0
+        #     return
         if activeTouches.__len__()==1:
-            for slot,touch in activeTouches.items():
-                # print(touch2)
-                mouse.moveFractional(touch)
-                if touch.pressed:
-                    mouse.setPressed(1)
-                mouse.syn()
+            self.doSingleTouchGesture(activeTouches,mouse)
         else:
             mouse.setPressed(0)
             mouse.syn()
         if activeTouches.__len__()>=2:
-            sums=[0.0,0.0,0]
-            for slot,touch in activeTouches.items():
-                sums[0]=sums[0]+touch.x
-                sums[1]=sums[1]+touch.y
-                sums[2]=sums[2]+1
-            avgX=sums[0]/sums[2]
-            avgY=sums[1]/sums[2]
-            print(avgX,avgY)
+            pos2=self.calculateAvgPos(activeTouches)
+    def calculateAvgPos(self,activeTouches:dict[int,TouchRelative]):
+        sums=[0.0,0.0]
+        count=0
+        for slot,touch in activeTouches.items():
+            sums[0]=sums[0]+touch.x
+            sums[1]=sums[1]+touch.y
+        count=activeTouches.__len__()
+        avgX=sums[0]/count
+        avgY=sums[1]/count
+        self.lastX
+        return (avgX,avgY)
+    def doSingleTouchGesture(self,activeTouches:dict[int,TouchRelative],mouse:Mouse):
+        for slot,touch in activeTouches.items():
+            mouse.moveFractional(touch)
+            if touch.pressed:
+                mouse.setPressed(1)
+            mouse.syn()
 
 class Mapper:
     geometryTouch:Geometry
@@ -94,10 +116,7 @@ class Mapper:
                     self.touchesCapturedByWidget[slot]=widget
                     
     def processGesture(self,touches:dict[int,TouchRelative]):
-        if len(touches)>0:
-            if not self.gesture:
-                self.gesture=Gesture()
-            self.gesture.processGesture(touches,self.mouse)
-        else:
-            self.gesture=None
+        if not self.gesture:
+            self.gesture=Gesture()
+        self.gesture.processGesture(touches,self.mouse)
             

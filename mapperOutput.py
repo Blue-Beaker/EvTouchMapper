@@ -26,3 +26,4 @@ class Mouse:
         self.uinput.write(ec.EV_KEY,key,pressed)
     def syn(self):
         self.uinput.syn()
+        
