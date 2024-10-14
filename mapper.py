@@ -45,6 +45,7 @@ class Mapper:
             if ((not relTouch.pressed) 
                 and (slot in self.touchesSwitched) 
                 and (slot in self.touchesCapturedByWidget)):
+                self.touchesCapturedByWidget[slot].onRelease(relTouch)
                 self.touchesCapturedByWidget.pop(slot)
             if slot in self.touchesCapturedByWidget:
                 self.touchesCapturedByWidget[slot].onTouch(relTouch)
