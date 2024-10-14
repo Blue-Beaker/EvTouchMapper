@@ -12,12 +12,42 @@ from mapperOutput import Mouse
 
 
 
-# ui_mouse = evdev.UInput(capabs,name='mapper-mouse')
+class Gesture:
+    
+    def __init__(self) -> None:
+        pass
+    # Do gestures, after the touch isn't captured by any widget
+    def processGesture(self,touches:dict[int,TouchRelative],mouse:Mouse):
+        activeTouches:dict[int,TouchRelative]={}
+        for slot,touch in touches.items():
+            if touch.pressed:
+                activeTouches[slot]=touch
+                
+        if activeTouches.__len__()==1:
+            for slot,touch in activeTouches.items():
+                # print(touch2)
+                mouse.moveFractional(touch)
+                if touch.pressed:
+                    mouse.setPressed(1)
+                mouse.syn()
+        else:
+            mouse.setPressed(0)
+            mouse.syn()
+        if activeTouches.__len__()>=2:
+            sums=[0.0,0.0,0]
+            for slot,touch in activeTouches.items():
+                sums[0]=sums[0]+touch.x
+                sums[1]=sums[1]+touch.y
+                sums[2]=sums[2]+1
+            avgX=sums[0]/sums[2]
+            avgY=sums[1]/sums[2]
+            print(avgX,avgY)
+
 class Mapper:
     geometryTouch:Geometry
     geometryOutput:Geometry=Geometry(0,16384,0,16384)
     widgetManager:mapperWidgets.WidgetManager|None=None
-    
+    gesture:Gesture|None=None
     def __init__(self):
         self.mouse = Mouse()
         self.touches:dict[int, TouchRelative]={}
@@ -62,30 +92,12 @@ class Mapper:
             for widget in widgets:
                 if widget.shouldCapture(touch):
                     self.touchesCapturedByWidget[slot]=widget
-    
-    # Do gestures, after the touch isn't captured by any widget
+                    
     def processGesture(self,touches:dict[int,TouchRelative]):
-        activeTouches:dict[int,TouchRelative]={}
-        for slot,touch in touches.items():
-            if touch.pressed:
-                activeTouches[slot]=touch
-                
-        if activeTouches.__len__()==1:
-            for slot,touch in activeTouches.items():
-                # print(touch2)
-                self.mouse.moveFractional(touch)
-                if touch.pressed:
-                    self.mouse.setPressed(1)
-                self.mouse.syn()
+        if len(touches)>0:
+            if not self.gesture:
+                self.gesture=Gesture()
+            self.gesture.processGesture(touches,self.mouse)
         else:
-            self.mouse.setPressed(0)
-            self.mouse.syn()
-        if activeTouches.__len__()>=2:
-            sums=[0.0,0.0,0]
-            for slot,touch in activeTouches.items():
-                sums[0]=sums[0]+touch.x
-                sums[1]=sums[1]+touch.y
-                sums[2]=sums[2]+1
-            avgX=sums[0]/sums[2]
-            avgY=sums[1]/sums[2]
-            print(avgX,avgY)
+            self.gesture=None
+            

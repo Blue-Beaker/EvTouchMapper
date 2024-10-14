@@ -99,7 +99,7 @@ class TouchTracker:
             self.capturedSlots.add(slot)
             
     def shouldStartCapture(self,touch:TouchInstance):
-        if touch.x>0:
+        if touch.x>=0:
             return True
         return False
     

@@ -8,7 +8,6 @@ class Widget:
         self.width=width
         self.height=height
         self.isRound=isRound
-        print(self)
     def __repr__(self) -> str:
         return f"{self.__class__.__name__} at ({self.x},{self.y}) {self.width}x{self.height} {'Round' if self.isRound else 'Box'}"
     def isInWidget(self,relTouch:geometryHelper.TouchRelative) -> bool:

@@ -1,3 +1,5 @@
+#! /bin/python3
+import threading
 import evdev
 from evdev import ecodes
 from evdev import UInput, InputDevice
@@ -9,6 +11,7 @@ from touch_tracker import TouchTracker
 from touchmapper_config import CONFIG
 import geometryHelper
 from mapper import Mapper
+import displayOverlay
 # sudo usermod -a -G input $USER before using this
 
 if __name__ == "__main__":
@@ -38,6 +41,7 @@ if __name__ == "__main__":
         exit()
 
     print(device.name)
+    device.grab()
     # print(device.capabilities(verbose=True))
     x=device.absinfo(0)
     y=device.absinfo(1)
@@ -45,21 +49,25 @@ if __name__ == "__main__":
     Mapper.geometryTouch=geometryHelper.Geometry(x.min,x.max,y.min,y.max)
 
     touch_passthrough = UInput.from_device(device, name=device.name+'passthrough')
-
-    device.grab()
+    touch_passthrough.syn()
     
     mapper=Mapper()
     
     mapper.widgetManager=test_widgets.TestWidgets()
     
     tracker=TouchTracker()
-    
-    # tracker.print_info=True
-    for event in device.read_loop():
-        event:InputEvent
-        events=tracker.handleEvent(event)
-        if events:
-            for event in events:
-                touch_passthrough.write_event(event)
-            captured=tracker.getCapturedTouches()
-            mapper.updateTouches(captured)
+    try:
+        overlayThread=threading.Thread(target=displayOverlay.runApp)
+        overlayThread.start()
+        # tracker.print_info=True
+        for event in device.read_loop():
+            event:InputEvent
+            events=tracker.handleEvent(event)
+            if events:
+                for event in events:
+                    pass
+                    # touch_passthrough.write_event(event)
+                captured=tracker.getCapturedTouches()
+                mapper.updateTouches(captured)
+    except KeyboardInterrupt:
+        displayOverlay.app.quit()
