@@ -33,11 +33,9 @@ class Button(Widget):
     def setKeyCode(self,key:int):
         def pressAction():
             mapperOutput.OUTPUT_HUB.keyboard.setPressed(key,1)
-            mapperOutput.OUTPUT_HUB.keyboard.syn()
         self.pressAction=pressAction
         def releaseAction():
             mapperOutput.OUTPUT_HUB.keyboard.setPressed(key,0)
-            mapperOutput.OUTPUT_HUB.keyboard.syn()
         self.releaseAction=releaseAction
         return self
     @override

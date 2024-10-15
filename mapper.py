@@ -72,6 +72,7 @@ class Mapper:
     gesture:Gesture|None=None
     def __init__(self):
         self.mouse = OUTPUT_HUB.mouse
+        self.keyboard=OUTPUT_HUB.keyboard
         self.touches:dict[int, TouchRelative]={}
         self.touchesSwitched:set[int]=set()
         self.touchesCapturedByWidget:dict[int,mapperWidgets.Widget]={}
@@ -79,17 +80,17 @@ class Mapper:
     # Update self touches from new event
     def updateTouches(self,touches:dict[int, TouchInstance]):
         for slot,touch in touches.items():
-            if slot in self.touches:
-                if self.touches[slot].pressed != touch.pressed:
-                    self.touchesSwitched.add(slot)
+            if slot not in self.touches or self.touches[slot].pressed != touch.pressed:
+                self.touchesSwitched.add(slot)
             self.touches[slot]=TouchRelative.fromAbsolute(touch,self.geometryTouch).flip(CONFIG.flip_x,CONFIG.flip_y,CONFIG.swap_xy)
         self.processTouchesFrame()
-        # print(self.touches)
+        print(f"Mapper: {self.touches}, ToWidgets: {self.touchesCapturedByWidget}")
     
     # Process to send touches to a widget or the gestures
     def processTouchesFrame(self):
         sendTouches:dict[int,TouchRelative]={}
-        slotsToPop:list[int]=[]
+        touchesReleased:list[int]=[]
+        
         for slot,relTouch in self.touches.items():
             # Attempt to bind newly pressed touches to a widget
             if relTouch.pressed and (slot in self.touchesSwitched):
@@ -98,17 +99,23 @@ class Mapper:
             if ((not relTouch.pressed) 
                 and (slot in self.touchesSwitched) 
                 and (slot in self.touchesCapturedByWidget)):
-                slotsToPop.append(slot)
                 self.touchesCapturedByWidget[slot].onRelease(relTouch)
+                
             elif slot in self.touchesCapturedByWidget:
                 self.touchesCapturedByWidget[slot].onTouch(relTouch)
             # Do gestures if not bind to a widget
             if slot not in self.touchesCapturedByWidget:
                 sendTouches[slot]=(relTouch)
-        for slot in slotsToPop:
-            self.touchesCapturedByWidget.pop(slot)
+            if not relTouch.pressed:
+                touchesReleased.append(slot)
+        for slot in touchesReleased:
+            if slot in self.touchesCapturedByWidget:
+                self.touchesCapturedByWidget.pop(slot)
+            self.touches.pop(slot)
         self.processGesture(sendTouches)
         self.touchesSwitched.clear()
+        
+        self.keyboard.syn()
         
     # Check whether the touch is captured by a widget and store that widget    
     def processWidgets(self,touch:TouchRelative,slot:int):

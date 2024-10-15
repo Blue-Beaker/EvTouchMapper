@@ -65,9 +65,9 @@ def runBackend():
             events=tracker.handleEvent(event)
             if events:
                 for event in events:
-                    pass
-                    # touch_passthrough.write_event(event)
-                captured=tracker.getCapturedTouches()
+                    # pass
+                    touch_passthrough.write_event(event)
+                captured=tracker.sendToMapper()
                 mapper.updateTouches(captured)
     except KeyboardInterrupt:
         displayOverlay.app.quit()

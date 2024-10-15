@@ -85,7 +85,8 @@ class OverlayWidgetManager():
                 #     signal.emit(*args)
                 # widget.onUpdate=update_with_signal
                 # signal.connect(wd.update)
-                widget.onUpdate=wd.update
+                pass
+                # widget.onUpdate=wd.update
                 
             wd.setStyleSheet('background: #808080ff;')
             wd.setParent(self.parent)
