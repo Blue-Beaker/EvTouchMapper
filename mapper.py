@@ -8,7 +8,7 @@ import evdev
 from evdev import ecodes as ec
 
 from touchmapper_config import CONFIG
-from mapperOutput import Mouse
+from mapperOutput import Mouse,Keyboard,OUTPUT_HUB
 
 
 
@@ -71,7 +71,7 @@ class Mapper:
     widgetManager:mapperWidgets.WidgetManager|None=None
     gesture:Gesture|None=None
     def __init__(self):
-        self.mouse = Mouse()
+        self.mouse = OUTPUT_HUB.mouse
         self.touches:dict[int, TouchRelative]={}
         self.touchesSwitched:set[int]=set()
         self.touchesCapturedByWidget:dict[int,mapperWidgets.Widget]={}

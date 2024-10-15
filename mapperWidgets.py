@@ -1,13 +1,15 @@
 from typing import override
-import geometryHelper
-
+import geometryHelper,mapperOutput
+from typing import Callable
 class Widget:
-    def __init__(self,x:float,y:float,width:float,height:float,isRound:bool=False) -> None:
+    onUpdate:Callable|None=None
+    def __init__(self,x:float,y:float,width:float,height:float,isRound:bool=False,name:str="") -> None:
         self.x=x
         self.y=y
         self.width=width
         self.height=height
         self.isRound=isRound
+        self.name=name
     def __repr__(self) -> str:
         return f"{self.__class__.__name__} at ({self.x},{self.y}) {self.width}x{self.height} {'Round' if self.isRound else 'Box'}"
     def isInWidget(self,relTouch:geometryHelper.TouchRelative) -> bool:
@@ -25,13 +27,36 @@ class Widget:
         pass
     
 class Button(Widget):
+    def __init__(self, x: float, y: float, width: float, height: float, isRound: bool = False, name: str = "") -> None:
+        super().__init__(x, y, width, height, isRound, name)
+        self.state=0
+    def setKeyCode(self,key:int):
+        def pressAction():
+            mapperOutput.OUTPUT_HUB.keyboard.setPressed(key,1)
+            mapperOutput.OUTPUT_HUB.keyboard.syn()
+        self.pressAction=pressAction
+        def releaseAction():
+            mapperOutput.OUTPUT_HUB.keyboard.setPressed(key,0)
+            mapperOutput.OUTPUT_HUB.keyboard.syn()
+        self.releaseAction=releaseAction
+        return self
     @override
     def shouldCapture(self, relTouch: geometryHelper.TouchRelative):
         return self.isInWidget(relTouch)
     def onTouch(self, relTouch: geometryHelper.TouchRelative):
         print("Pressing",relTouch,self)
+        if self.state==0 and self.pressAction:
+            self.pressAction()
+        self.state=1
+        if callable(self.onUpdate):
+            self.onUpdate(self.state)
     def onRelease(self, relTouch: geometryHelper.TouchRelative):
         print("Released",relTouch,self)
+        self.state=0
+        if self.releaseAction:
+            self.releaseAction()
+        if callable(self.onUpdate):
+            self.onUpdate(self.state)
     
 class WidgetManager:
     __widgets:list[Widget]

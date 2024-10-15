@@ -6,21 +6,26 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QVBoxLayout,
     QWidget,
-    QLayout,QWidgetItem
+    QLayout,QWidgetItem,QStyle
 )
 from PyQt5 import QtCore
-from PyQt5.QtCore import QSize
+from PyQt5.QtCore import QSize,pyqtSignal,QThread
 from PyQt5.QtGui import QRegion,QResizeEvent
 import pywayland.client
 import pywayland.protocol
 import pywayland.protocol.wayland
 import mapperWidgets
 import test_widgets
+import evtouch_grab
+
+COLOR_ACTIVE="80B0B0B0"
+COLOR_INACTIVE="808080ff"
 
 class MapperWidget(QWidget):
     def __init__(self,widget:mapperWidgets.Widget,*args):
         super().__init__(*args)
         self.widget=widget
+        self.setText(widget.name)
     def resizePos(self):
         window=self.window()
         if window:
@@ -36,6 +41,7 @@ class MapperButton(QPushButton):
     def __init__(self,widget:mapperWidgets.Button,*args):
         super().__init__(*args)
         self.widget=widget
+        self.setText(widget.name)
     def resizePos(self):
         window=self.window()
         if window:
@@ -46,7 +52,10 @@ class MapperButton(QPushButton):
             y=round(self.widget.y*size.height()-h/2)
             self.setGeometry(x,y,w,h)
             print(x,y,w,h)
-
+    def update(self,state:bool):
+        print(state)
+        self.setStyleSheet(f'background: #{COLOR_ACTIVE if state else COLOR_INACTIVE};')
+        # self.setFlat(state)
 class OverlayWidgetManager():
     def __init__(self,parent:QWidget|None=None,widgetManager:mapperWidgets.WidgetManager|None=None,*args):
         super().__init__(*args)
@@ -69,12 +78,23 @@ class OverlayWidgetManager():
             else:
                 wd=MapperWidget(widget)
                 self.__items.append(wd)
+            
+            if wd.update:
+                # signal=QtCore.pyqtBoundSignal()
+                # def update_with_signal(*args):
+                #     signal.emit(*args)
+                # widget.onUpdate=update_with_signal
+                # signal.connect(wd.update)
+                widget.onUpdate=wd.update
+                
+            wd.setStyleSheet('background: #808080ff;')
             wd.setParent(self.parent)
+            
     def resizeEvent(self, a0: QResizeEvent | None) -> None:
         for widget in self.__items:
             widget.resizePos()
             
-class Window(QWidget):
+class OverlayWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowFlag(QtCore.Qt.WindowType.WindowDoesNotAcceptFocus)
@@ -90,28 +110,42 @@ class Window(QWidget):
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_X11OpenGLOverlay)
         self.setWindowState(QtCore.Qt.WindowState.WindowFullScreen)
         
+        self.setMask(QRegion(0,0,1,1,QRegion.RegionType.Rectangle))
+        
         self.setWindowTitle("EvTouchMapper Overlay")
-        # self.showMaximized()
         self.setGeometry(0,0,1600,900)
-        # Create a QVBoxLayout instance
+        
         self.managerWidget = OverlayWidgetManager(self,None)
-        # self.setLayout(self.managerWidget)
+    @override
     def resizeEvent(self, a0: QResizeEvent | None) -> None:
         self.managerWidget.resizeEvent(a0)
-def runApp():
-    global app
+        
+def initApp(widgetManager:mapperWidgets.WidgetManager):
+    global app,window
     app = QApplication(sys.argv)
     app.instance()
-    print(app.activeWindow())
-    
-    display=pywayland.client.display.Display()
-    display.connect()
-    
-    window = Window()
+    window = OverlayWindow()
+    window.managerWidget.widgetManager=widgetManager
+    window.managerWidget.reloadWidgets()
+    window.show()
+    app.exec()
+
+class DownloadThread(QtCore.QThread):
+
+    update_widgets = QtCore.pyqtSignal(object)
+
+    def __init__(self, parent):
+        QtCore.QThread.__init__(self, parent)
+
+    def run(self):
+        evtouch_grab.runBackend()
+        self.update_widgets.emit()
+        
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    app.instance()
+    window = OverlayWindow()
     window.managerWidget.widgetManager=test_widgets.TestWidgets()
     window.managerWidget.reloadWidgets()
-    window.setMask(QRegion(0,0,1,1,QRegion.RegionType.Rectangle))
     window.show()
-    return app.exec()
-if __name__ == "__main__":
-    runApp()
+    app.exec()

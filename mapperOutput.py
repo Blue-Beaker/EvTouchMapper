@@ -8,8 +8,9 @@ MOUSE_CAPABS = {
         (ec.ABS_X, evdev.AbsInfo(value=0, min=0, max=16384,
                           fuzz=0, flat=0, resolution=0)),
         (ec.ABS_Y, evdev.AbsInfo(0, 0, 16384, 0, 0, 0))],
-    ec.EV_REL:[ec.REL_HWHEEL,ec.REL_WHEEL,ec.REL_WHEEL_HI_RES,ec.REL_HWHEEL_HI_RES]
+    ec.EV_REL:[ec.REL_X,ec.REL_Y,ec.REL_HWHEEL,ec.REL_WHEEL,ec.REL_WHEEL_HI_RES,ec.REL_HWHEEL_HI_RES]
 }
+
 class Mouse:
     geometry=geometryHelper.Geometry(0,16384,0,16384)
     def __init__(self,device_name:str='mapper-mouse') -> None:
@@ -27,3 +28,26 @@ class Mouse:
     def syn(self):
         self.uinput.syn()
         
+class Keyboard():
+    def __init__(self,device_name:str='mapper-keyboard') -> None:
+        self.uinput=evdev.UInput(name=device_name)
+        
+    def setPressed(self,key:int,pressed:int=1):
+        self.uinput.write(ec.EV_KEY,key,pressed)
+    
+    def setPressedByName(self,key:str,pressed:int=1):
+        name='KEY_'+key.upper()
+        if name in ec.keys:
+            self.setPressed(pressed,ec.keys[name])
+        else:
+            print(f'Key {name} not found')
+    
+    def syn(self):
+        self.uinput.syn()
+        
+class OutputHub():
+    def __init__(self) -> None:
+        self.mouse=Mouse()
+        self.keyboard=Keyboard()
+        
+OUTPUT_HUB=OutputHub()

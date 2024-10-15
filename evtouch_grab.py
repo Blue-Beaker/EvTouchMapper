@@ -13,8 +13,7 @@ import geometryHelper
 from mapper import Mapper
 import displayOverlay
 # sudo usermod -a -G input $USER before using this
-
-if __name__ == "__main__":
+def runBackend():
     CONFIG.update_config()
     devices = [InputDevice(path) for path in evdev.list_devices()]
     tp_devices:list[InputDevice]=[]
@@ -53,11 +52,12 @@ if __name__ == "__main__":
     
     mapper=Mapper()
     
-    mapper.widgetManager=test_widgets.TestWidgets()
+    widgetManager=test_widgets.TestWidgets()
+    mapper.widgetManager=widgetManager
     
     tracker=TouchTracker()
     try:
-        overlayThread=threading.Thread(target=displayOverlay.runApp)
+        overlayThread=threading.Thread(target=displayOverlay.initApp,args=[widgetManager])
         overlayThread.start()
         # tracker.print_info=True
         for event in device.read_loop():
@@ -71,3 +71,6 @@ if __name__ == "__main__":
                 mapper.updateTouches(captured)
     except KeyboardInterrupt:
         displayOverlay.app.quit()
+        
+if __name__ == "__main__":
+    runBackend()
