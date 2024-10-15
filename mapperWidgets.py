@@ -44,14 +44,14 @@ class Button(Widget):
     def shouldCapture(self, relTouch: geometryHelper.TouchRelative):
         return self.isInWidget(relTouch)
     def onTouch(self, relTouch: geometryHelper.TouchRelative):
-        print("Pressing",relTouch,self)
+        # print("Pressing",relTouch,self)
         if self.state==0 and self.pressAction:
             self.pressAction()
         self.state=1
         if callable(self.onUpdate):
             self.onUpdate(self.state)
     def onRelease(self, relTouch: geometryHelper.TouchRelative):
-        print("Released",relTouch,self)
+        # print("Released",relTouch,self)
         self.state=0
         if self.releaseAction:
             self.releaseAction()

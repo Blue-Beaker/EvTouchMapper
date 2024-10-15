@@ -53,7 +53,7 @@ class MapperButton(QPushButton):
             self.setGeometry(x,y,w,h)
             print(x,y,w,h)
     def update(self,state:bool):
-        print(state)
+        # print(state)
         self.setStyleSheet(f'background: #{COLOR_ACTIVE if state else COLOR_INACTIVE};')
         # self.setFlat(state)
 class OverlayWidgetManager():
@@ -70,7 +70,7 @@ class OverlayWidgetManager():
             widget.setParent(None)
             
         for widget in self.widgetManager.getWidgets():
-            print(widget)
+            # print(widget)
             wd:MapperWidget
             if isinstance(widget,mapperWidgets.Button):
                 wd=MapperButton(widget)

@@ -89,6 +89,7 @@ class Mapper:
     # Process to send touches to a widget or the gestures
     def processTouchesFrame(self):
         sendTouches:dict[int,TouchRelative]={}
+        slotsToPop:list[int]=[]
         for slot,relTouch in self.touches.items():
             # Attempt to bind newly pressed touches to a widget
             if relTouch.pressed and (slot in self.touchesSwitched):
@@ -97,13 +98,15 @@ class Mapper:
             if ((not relTouch.pressed) 
                 and (slot in self.touchesSwitched) 
                 and (slot in self.touchesCapturedByWidget)):
+                slotsToPop.append(slot)
                 self.touchesCapturedByWidget[slot].onRelease(relTouch)
-                self.touchesCapturedByWidget.pop(slot)
-            if slot in self.touchesCapturedByWidget:
+            elif slot in self.touchesCapturedByWidget:
                 self.touchesCapturedByWidget[slot].onTouch(relTouch)
             # Do gestures if not bind to a widget
             if slot not in self.touchesCapturedByWidget:
                 sendTouches[slot]=(relTouch)
+        for slot in slotsToPop:
+            self.touchesCapturedByWidget.pop(slot)
         self.processGesture(sendTouches)
         self.touchesSwitched.clear()
         
