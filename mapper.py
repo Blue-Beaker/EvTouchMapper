@@ -24,6 +24,7 @@ class Gesture:
         self.clicks:int=0
     # Do gestures, after the touch isn't captured by any widget
     def processGesture(self,touches:dict[int,TouchRelative],mouse:Mouse):
+        print(touches)
         activeTouches:dict[int,TouchRelative]={}
         for slot,touch in touches.items():
             if touch.pressed:
@@ -76,6 +77,7 @@ class Mapper:
         self.touches:dict[int, TouchRelative]={}
         self.touchesSwitched:set[int]=set()
         self.touchesCapturedByWidget:dict[int,mapperWidgets.Widget]={}
+        self.debugInfo=False
         
     # Update self touches from new event
     def updateTouches(self,touches:dict[int, TouchInstance]):
@@ -84,7 +86,8 @@ class Mapper:
                 self.touchesSwitched.add(slot)
             self.touches[slot]=TouchRelative.fromAbsolute(touch,self.geometryTouch).flip(CONFIG.flip_x,CONFIG.flip_y,CONFIG.swap_xy)
         self.processTouchesFrame()
-        print(f"Mapper: {self.touches}, ToWidgets: {self.touchesCapturedByWidget}")
+        if self.debugInfo:
+            print(f"Mapper: {self.touches}, ToWidgets: {self.touchesCapturedByWidget}")
     
     # Process to send touches to a widget or the gestures
     def processTouchesFrame(self):
@@ -112,7 +115,8 @@ class Mapper:
             if slot in self.touchesCapturedByWidget:
                 self.touchesCapturedByWidget.pop(slot)
             self.touches.pop(slot)
-        self.processGesture(sendTouches)
+        if sendTouches.__len__()>0:
+            self.processGesture(sendTouches)
         self.touchesSwitched.clear()
         
         self.keyboard.syn()

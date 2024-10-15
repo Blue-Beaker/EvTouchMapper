@@ -9,18 +9,10 @@ ACTION_PRESS=1
 ACTION_RELEASE=0
     
 class TouchTracker:
-
-    # print_info:bool
-
-    # lastSlot:int
-    # trackID:int
-    # capturedSlots:set[int]
-    # touchInstances:dict[int,TouchInstance]
-    # unsentActions:list[tuple[int,int]]
-    # unsentEvents:list[tuple[int,InputEvent]]
+    
     def __init__(self):
 
-        self.print_info=True
+        self.print_info=False
 
         self.lastSlot:int=0
         self.trackID:int=-1
@@ -42,22 +34,28 @@ class TouchTracker:
         
         self.capturedTouches:dict[int,TouchInstance]={}
         
+        self.updatedTouches:set[int]=set()
+        """Touch slots that updated after last SYN event."""
+        
     def saveTouches(self,event:InputEvent):
         if event.type==3:
             if event.code==ecodes.ABS_MT_SLOT:
-                if event.value!=-1:
-                    if event.value not in self.touches:
-                        self.touches[event.value]=TouchInstance(id=-1)
-                    self.lastSlot=event.value
+                slot:int=event.value
+                if slot!=-1:
+                    if slot not in self.touches:
+                        self.touches[slot]=TouchInstance(id=-1)
+                    self.lastSlot=slot
+                    self.updatedTouches.add(slot)
 
             elif event.code==ecodes.ABS_MT_TRACKING_ID:
-                if event.value==-1:
+                trackID:int=event.value
+                if trackID==-1:
                     self.releaseSlot(self.lastSlot)
                     self.idsToStopCapture.add(self.trackID)
                 else:
-                    self.startPressSlot(self.lastSlot,event.value)
-                    self.trackID=event.value
-                    self.slotsToIds[self.lastSlot]=event.value
+                    self.startPressSlot(self.lastSlot,trackID)
+                    self.trackID=trackID
+                    self.slotsToIds[self.lastSlot]=trackID
 
             elif (event.code==ecodes.ABS_X) or (event.code==ecodes.ABS_MT_POSITION_X):
                 self.touches[self.lastSlot].x=event.value
@@ -166,8 +164,16 @@ class TouchTracker:
 
     def sendToMapper(self):
         """Get captured touches to send to mapper. Also flushes"""
-        captured=self.capturedTouches.copy()
+        captured:dict[int, TouchInstance]={}
         
+        for slot in self.updatedTouches:
+            tid=self.getIdFromSlot(slot)
+            if tid in self.capturedTouches:
+                touch=self.capturedTouches[tid]
+                if touch.x>0 and touch.y>0:
+                    captured[tid]=touch
+                
+            
         for action,slot,id in self.bufferedActions:
             if action==ACTION_RELEASE:
                 self.removeCapturingId(id)
