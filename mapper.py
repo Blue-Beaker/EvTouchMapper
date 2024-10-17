@@ -24,7 +24,8 @@ class Gesture:
         self.clicks:int=0
     # Do gestures, after the touch isn't captured by any widget
     def processGesture(self,touches:dict[int,TouchRelative],mouse:Mouse):
-        print(touches)
+        
+        # print(touches)
         activeTouches:dict[int,TouchRelative]={}
         for slot,touch in touches.items():
             if touch.pressed:
