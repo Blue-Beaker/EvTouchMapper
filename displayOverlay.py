@@ -11,9 +11,6 @@ from PyQt5.QtWidgets import (
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSize,pyqtSignal,QThread
 from PyQt5.QtGui import QRegion,QResizeEvent
-import pywayland.client
-import pywayland.protocol
-import pywayland.protocol.wayland
 import mapperWidgets
 import test_widgets
 import evtouch_grab
@@ -130,17 +127,6 @@ def initApp(widgetManager:mapperWidgets.WidgetManager):
     window.managerWidget.reloadWidgets()
     window.show()
     app.exec()
-
-class DownloadThread(QtCore.QThread):
-
-    update_widgets = QtCore.pyqtSignal(object)
-
-    def __init__(self, parent):
-        QtCore.QThread.__init__(self, parent)
-
-    def run(self):
-        evtouch_grab.runBackend()
-        self.update_widgets.emit()
         
 if __name__ == "__main__":
     app = QApplication(sys.argv)

@@ -1,6 +1,9 @@
 import evdev
 from evdev import ecodes as ec
 import geometryHelper
+import pynput,sys,os
+
+IS_X11=False
 
 MOUSE_CAPABS = {
     ec.EV_KEY : [ec.BTN_LEFT, ec.BTN_RIGHT, ec.BTN_MIDDLE, ec.BTN_FORWARD, ec.BTN_BACK],
@@ -11,14 +14,19 @@ MOUSE_CAPABS = {
     ec.EV_REL:[ec.REL_X,ec.REL_Y,ec.REL_HWHEEL,ec.REL_WHEEL,ec.REL_WHEEL_HI_RES,ec.REL_HWHEEL_HI_RES]
 }
 
+
 class Mouse:
     geometry=geometryHelper.Geometry(0,16384,0,16384)
     def __init__(self,device_name:str='mapper-mouse') -> None:
         self.uinput=evdev.UInput(MOUSE_CAPABS,name=device_name)
-        
+        self.x11Mouse=pynput.mouse.Controller()
     def moveRaw(self,x:int,y:int):
-        self.uinput.write(ec.EV_ABS, ec.ABS_X, x)
-        self.uinput.write(ec.EV_ABS, ec.ABS_Y, y)
+        if not IS_X11:
+            self.uinput.write(ec.EV_ABS, ec.ABS_X, x)
+            self.uinput.write(ec.EV_ABS, ec.ABS_Y, y)
+        else:
+            pos=self.x11Mouse.position
+            self.x11Mouse.move(x-pos[0],y-pos[1])
         
     def moveFractional(self,rel:geometryHelper.TouchRelative):
         pos=rel.toAbsolute(self.geometry)
