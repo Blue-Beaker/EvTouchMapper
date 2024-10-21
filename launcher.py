@@ -69,13 +69,14 @@ class LauncherWindow(QWidget):
     def launch(self):
         time.sleep(0.5)
         self.launchBackend()
-        # self.launchOverlay()
+        self.launchOverlay()
     def stop(self):
         time.sleep(0.5)
         if self.backendThread:
             self.backendThread.quit()
         if self.overlay:
-            self.overlay.quit()
+            self.overlay.close()
+            self.overlay=None
     
     def launchBackend(self):
         mapperOutput.IS_X11=IS_X11
@@ -95,8 +96,12 @@ class LauncherWindow(QWidget):
         self.backendThread=BackendThread(self.backendManager)
         self.backendThread.start()
     def launchOverlay(self):
-        self.overlay=OverlayThread()
-        self.overlay.start()
+        self.overlay=displayOverlay.OverlayWindow(IS_X11)
+        self.overlay.managerWidget.widgetManager=evtouch_grab.widgetManager
+        self.overlay.managerWidget.reloadWidgets()
+        self.overlay.show()
+        # self.overlay=OverlayThread()
+        # self.overlay.start()
         
 def initApp():
     global app,window

@@ -93,22 +93,22 @@ class OverlayWidgetManager():
             widget.resizePos()
             
 class OverlayWindow(QWidget):
-    def __init__(self):
+    def __init__(self,isX11:bool=False):
         super().__init__()
         self.setWindowFlag(QtCore.Qt.WindowType.WindowDoesNotAcceptFocus)
         self.setWindowFlag(QtCore.Qt.WindowType.WindowTransparentForInput)
         # Doesnt work under wayland
         self.setWindowFlag(QtCore.Qt.WindowType.WindowStaysOnTopHint)
         
-        self.setWindowFlag(QtCore.Qt.WindowType.BypassWindowManagerHint)
-        self.setWindowFlag(QtCore.Qt.WindowType.X11BypassWindowManagerHint)
+        # self.setWindowFlag(QtCore.Qt.WindowType.BypassWindowManagerHint)
+        # self.setWindowFlag(QtCore.Qt.WindowType.X11BypassWindowManagerHint)
         
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_X11DoNotAcceptFocus)
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_X11OpenGLOverlay)
         self.setWindowState(QtCore.Qt.WindowState.WindowFullScreen)
-        
-        self.setMask(QRegion(0,0,1,1,QRegion.RegionType.Rectangle))
+        if not isX11:
+            self.setMask(QRegion(0,0,1,1,QRegion.RegionType.Rectangle))
         
         self.setWindowTitle("EvTouchMapper Overlay")
         self.setGeometry(0,0,1600,900)
